@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD 17)
 # (note this can come from environment, CMake cache etc)
 set(PICO_SDK_PATH "${CMAKE_SOURCE_DIR}../../pico-sdk")
 # set(FREERTOS_KERNEL_PATH "${CMAKE_SOURCE_DIR}../../FreeRTOS-Kernel-SMP")
-set(FREERTOS_KERNEL_PATH "${CMAKE_SOURCE_DIR}/../FreeRTOSv202112.00/FreeRTOS/Source")
+set(FREERTOS_KERNEL_PATH "${CMAKE_SOURCE_DIR}/../FreeRTOS/FreeRTOS/Source")
 
 # Pull in Raspberry Pi Pico SDK (must be before project)
 include(pico_sdk_import.cmake)

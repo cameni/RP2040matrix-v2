@@ -297,7 +297,7 @@ void initPongGame(void)
 	playGround.b = 50;
 
 	LEDmx_ClearOverlay();
-	LEDmx_SetOverlayColor(1, YELLOW);
+	LEDmx_SetOverlayColor(1, RGB(0xff, 0x7f, 0x00));
 	LEDmx_SetOverlayColor(2, RED);
 	LEDmx_SetOverlayColor(3, LTGREEN);
 

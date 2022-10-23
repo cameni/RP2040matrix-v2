@@ -22,53 +22,29 @@
 ;  Data pins are 0..5: R0, G0, B0, R1, G1, B1
 ;  Row sel pins are: 6..10: A .. E
 
-.program ps_64_data
+.program ps_64_data2
 ; OUT pins are 0..5: R0, G0, B0, R1, G1, B1
 ; SET pins are LATCH(11) and OE(12)
 ; SIDE pin is CLK(13)
 .side_set 1
 
-public entry_data:
+public entry_data2:
 .wrap_target
 public shift0:
     set x, 15           side 0  ; init loop counter for 64 columns
     irq wait 0          side 0  ; set and wait for IRQ-0 to be reset
 loop0:
     pull block          side 0  ; get cols N..N+3 (triggers data DMA channel))
-    out pins, 6         side 0  ; ----------- appy data ----------------------
-    out y, 2            side 1
-;    jmp !y, noOE0       side 1 ; skip 2 steps because we have no enough program memory (only 32 words for all 4 machines)
-;    set pins 2          side 0
-noOE0:
-    jmp !x, loop1       side 1  ; last 4 pixels are handled below
-    out pins, 6         side 0  ; ----------- appy data ----------------------
+loox:
+    out pins, 6         side 0  ; ----------- apply data ----------------------
     out y, 2            side 0
-    jmp !y, noOE1 [1]   side 1  ; enable OE when brightness limit reached
+    jmp !y, noOE [2]    side 0  ; enable OE when brightness limit reached
     set pins 0          side 0
-noOE1:
-    out pins, 6         side 0  ; ----------- appy data ----------------------
-    out y, 2            side 0
-    jmp !y, noOE2 [1]   side 1
-    set pins 0          side 0
-noOE2:
-    out pins, 6         side 0  ; ----------- appy data ----------------------
-    out y, 2            side 0
-    jmp !y, noOE3 [1]   side 1
-    set pins 0          side 0
-noOE3:
+noOE:
+    jmp !osre, loox [1] side 1
     jmp x--, loop0      side 0
-    ; never reached because x==0 is handled above
-  
-loop1:
-    set pins 3          side 0  ; last data block in this row: apply LATCH; disable OE
-    out pins, 6  [1]    side 0  ; ----------- appy data ----------------------
-    out null, 2  [1]    side 1
-    out pins, 6  [1]    side 0  ; ----------- appy data ----------------------
-    out null, 2  [1]    side 1
-    out pins, 6  [1]    side 0  ;  ----------- appy data ----------------------
-
-loop2:
-    irq clear 1  [1]    side 1  ; LATCH will be released by ctrl state machine
+    set pins 3 [5]      side 0  ; last data block in this row: apply LATCH; disable OE
+    irq clear 1 [1]     side 0  ; LATCH will be released by ctrl state machine
 .wrap
 
 
@@ -80,7 +56,7 @@ static inline void ps_64_data_program_init(PIO pio, uint sm, uint offset,
     int setBase, int setCnt,
     int sideBase, int sideCnt)
 {
-    pio_sm_config c = ps_64_data_program_get_default_config(offset);
+    pio_sm_config c = ps_64_data2_program_get_default_config(offset);
 
     if (outCnt > 0)
     {
@@ -113,11 +89,11 @@ static inline void ps_64_data_program_init(PIO pio, uint sm, uint offset,
 
     // sm_config_set_clkdiv(&c, 2);
 
-    sm_config_set_out_shift(&c, true, true, 32);
+    sm_config_set_out_shift(&c, true, false, 32);
     sm_config_set_in_shift(&c, false, false, 32);
 
     pio_sm_init(pio, sm, offset, &c);
-    pio_sm_exec(pio, sm, offset + ps_64_data_offset_entry_data);
+    pio_sm_exec(pio, sm, offset + ps_64_data2_offset_entry_data2);
     pio_sm_set_enabled(pio, sm, true);
 }
 

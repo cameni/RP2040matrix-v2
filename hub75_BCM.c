@@ -21,7 +21,6 @@
 #include <string.h>
 #include "stdint.h"
 #include "stdlib.h"
-#include "pico/stdlib.h"
 #include "FreeRTOS.h"
 #include "task.h"
 #include "pico/stdlib.h"
@@ -109,7 +108,7 @@ static void hub75_init()
 #endif
 #ifdef PCB_LAYOUT_V2
 #if HUB75_SIZE == 4040
-    display_offset_data = pio_add_program(display_pio, &ps_64_data_program);
+    display_offset_data = pio_add_program(display_pio, &ps_64_data2_program);
     ps_64_data_program_init(
         display_pio,
         display_sm_data,
