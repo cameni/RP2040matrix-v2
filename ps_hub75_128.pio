@@ -88,13 +88,6 @@ static inline void ps_128_data_program_init(PIO pio, uint sm, uint offset,
     pio_sm_set_enabled(pio, sm, true);
 }
 
-static inline void ps_hub75_wait_tx_stall(PIO pio, uint sm) {
-    uint32_t txstall_mask = 1u << (PIO_FDEBUG_TXSTALL_LSB + sm);
-    pio->fdebug = txstall_mask;
-    while (!(pio->fdebug & txstall_mask))
-        tight_loop_contents();
-}
-
 %}
 
 

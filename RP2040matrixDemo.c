@@ -29,9 +29,11 @@
 #include "hardware/gpio.h"
 #include "hardware/pio.h"
 #include "LEDmx.h"
+#include "bmfont.h"
 
 
-char				logTimeBuf[32];
+char logTimeBuf[32];
+extern struct font* base_font;
 
 
 void blinkTask(void* para)
@@ -127,35 +129,43 @@ void app_main(void* para)
     LEDmx_ClearScreen(BLACK);
 
     // Fill both framebuffers with a default pattern
-    for (int x = 16; x < DISPLAY_WIDTH - 16; ++x) {
+    /*for (int x = 16; x < DISPLAY_WIDTH - 16; ++x) {
         for (int y = 16; y < DISPLAY_HEIGHT - 16; ++y) {
             uint32_t c = (x * 3) << 16 | (y * 3) << 8 | ((x * y) >> 4) << 0;
 
             LEDmx_SetPixel(x, y, c);
             LEDmx_SetPixel(x, y, c);
         }
-    }
+    }*/
 
-    for (int x = 4; x < DISPLAY_WIDTH - 4; ++x)
+    for (int x = 1; x < DISPLAY_WIDTH - 1; ++x)
     {
-        LEDmx_SetPixel(x, 4, 0x333300);        // yellow
-        LEDmx_SetPixel(x, 60, 0x330033);       // pink
+        LEDmx_SetPixel(x, 0, 0x333300);        // yellow
+        LEDmx_SetPixel(x, DISPLAY_HEIGHT - 1, 0x330033);      // pink
     }
     for (int y = 0; y < DISPLAY_HEIGHT; ++y)
     {
-        LEDmx_SetPixel(1, y, 0x003300);        // green
-        LEDmx_SetPixel(62, y, 0x000033);       // blue
+        LEDmx_SetPixel(0, y, 0x003300);        // green
+        LEDmx_SetPixel(DISPLAY_WIDTH - 1, y, 0x000033);       // blue
+    }
+	LEDmx_SetPixel(1, 32, 0x003333);
+
+    {
+        int x = 10;
+        x = LEDmx_String("17:06", base_font, x, 0, LTBLUE, false);
+        x += 10;
+        x = LEDmx_String("-1.8 C", base_font, x, 0, LTGREEN, false);
     }
 
     TaskHandle_t xHandle = NULL;
-    /* Create the task, storing the handle. */
-    xTaskCreate(
-        lifeTask,       /* Function that implements the task. */
-        "LIFE task",   /* Text name for the task. */
-        1000,             /* Stack size in words, not bytes. */
-        (void*)1,    /* Parameter passed into the task. */
-        tskIDLE_PRIORITY,/* Priority at which the task is created. */
-        &xHandle);
+    // Create the task, storing the handle.
+    /*xTaskCreate(
+        lifeTask,       // Function that implements the task.
+        "LIFE task",   // Text name for the task.
+        1000,             // Stack size in words, not bytes.
+        (void*)1,    // Parameter passed into the task.
+        tskIDLE_PRIORITY,// Priority at which the task is created.
+        &xHandle);*/
 
     xHandle = NULL;
     xTaskCreate(
@@ -166,14 +176,14 @@ void app_main(void* para)
         tskIDLE_PRIORITY,// Priority at which the task is created.
         &xHandle);
 
-    xHandle = NULL;
+    /*xHandle = NULL;
     xTaskCreate(
         blinkTask,       // Function that implements the task.
         "Blink task",   // Text name for the task.
         500,             // Stack size in words, not bytes.
         (void*)1,    // Parameter passed into the task.
         tskIDLE_PRIORITY,// Priority at which the task is created.
-        &xHandle);
+        &xHandle);*/
 
     vTaskDelete(NULL);
 }

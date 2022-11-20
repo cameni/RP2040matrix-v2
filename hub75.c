@@ -113,6 +113,26 @@ static void hub75_init()
         PIO_CTRL_SET_BASE, PIO_CTRL_SET_CNT,
         PIO_CTRL_SIDE_BASE, PIO_CTRL_SIDE_CNT
     );
+#elif HUB75_SIZE == 8040
+    display_offset_data = pio_add_program(display_pio, &ps_64_data_program);
+    ps_64_data_program_init(
+        display_pio,
+        display_sm_data,
+        display_offset_data,
+        PIO_DATA_OUT_BASE, PIO_DATA_OUT_CNT,
+        PIO_DATA_SET_BASE, PIO_DATA_SET_CNT,
+        PIO_DATA_SIDE_BASE, PIO_DATA_SIDE_CNT
+    );
+
+    display_offset_ctrl = pio_add_program(display_pio, &ps_64_ctrl_program);
+    ps_64_ctrl_program_init(
+        display_pio,
+        display_sm_ctrl,
+        display_offset_ctrl,
+        PIO_CTRL_OUT_BASE, PIO_CTRL_OUT_CNT,
+        PIO_CTRL_SET_BASE, PIO_CTRL_SET_CNT,
+        PIO_CTRL_SIDE_BASE, PIO_CTRL_SIDE_CNT
+    );
 #else
     display_offset_data = pio_add_program(display_pio, &ps_128_data_program);
     ps_128_data_program_init(
@@ -152,11 +172,7 @@ static void hub75_init()
         &c,
         &pio0_hw->txf[display_sm_data],
         NULL,  // Will be set later for each transfer
-#if HUB75_SIZE == 4040
-        bitPlanes * ((DISPLAY_WIDTH / 4) * DISPLAY_SCAN),     // complete frame buffer for X bit planes
-#elif HUB75_SIZE == 8080
-        bitPlanes * ((DISPLAY_WIDTH / 2) * DISPLAY_SCAN),     // complete frame buffer for X bit planes
-#endif
+        bitPlanes * (DISPLAY_WIDTH_SCAN * DISPLAY_SCAN),     // complete frame buffer for X bit planes
         false
     );
     dma_channel_set_irq0_enabled(display_dma_chan, true);
@@ -243,24 +259,14 @@ void hub75_config(int bpp)
     if (frameBuffer)
         free(frameBuffer);
 
-#if HUB75_SIZE == 4040
-    frameBuffer = (uint32_t*)malloc(bitPlanes * (DISPLAY_WIDTH / 4) * DISPLAY_SCAN * sizeof(uint32_t));
-    memset(frameBuffer, 0, bitPlanes * (DISPLAY_WIDTH / 4) * DISPLAY_SCAN * sizeof(uint32_t));
-#elif HUB75_SIZE == 8080
-    frameBuffer = (uint32_t*)malloc(bitPlanes * (DISPLAY_WIDTH / 2) * DISPLAY_SCAN * sizeof(uint32_t));
-    memset(frameBuffer, 0, bitPlanes * (DISPLAY_WIDTH / 2) * DISPLAY_SCAN * sizeof(uint32_t));
-#endif
+    frameBuffer = (uint32_t*)malloc(bitPlanes * (DISPLAY_WIDTH_SCAN * DISPLAY_SCAN * sizeof(uint32_t)));
+    memset(frameBuffer, 0, bitPlanes * (DISPLAY_WIDTH_SCAN * DISPLAY_SCAN * sizeof(uint32_t)));
 
     if (overlayBuffer)
         free(overlayBuffer);
 
-#if HUB75_SIZE == 4040
-    overlayBuffer = (uint8_t*)malloc(bitPlanes * (DISPLAY_WIDTH / 4) * DISPLAY_SCAN * sizeof(uint8_t));
-    memset(overlayBuffer, 0, bitPlanes * (DISPLAY_WIDTH / 4) * DISPLAY_SCAN * sizeof(uint8_t));
-#elif HUB75_SIZE == 8080
-    overlayBuffer = (uint8_t*)malloc(bitPlanes * (DISPLAY_WIDTH / 2) * DISPLAY_SCAN * sizeof(uint8_t));
-    memset(overlayBuffer, 0, bitPlanes * (DISPLAY_WIDTH / 2) * DISPLAY_SCAN * sizeof(uint8_t));
-#endif
+    overlayBuffer = (uint8_t*)malloc(bitPlanes * (DISPLAY_WIDTH_SCAN * DISPLAY_SCAN * sizeof(uint8_t)));
+    memset(overlayBuffer, 0, bitPlanes * (DISPLAY_WIDTH_SCAN * DISPLAY_SCAN * sizeof(uint8_t)));
 
     if (ctrlBuffer)
         free(ctrlBuffer);

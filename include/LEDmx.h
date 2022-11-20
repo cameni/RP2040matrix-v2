@@ -33,6 +33,7 @@ extern uint16_t    bitPlanes;
 #define     RGB(r, g, b)                (((r & 0xFF) << 16) | ((g & 0xFF) << 8) | ((b & 0xFF)))
 #define 	MAP_888_to_565(c)			(uint16_t)(((c >> 8) & 0xF8) | ((c >> 5) & 0x7E) | ((c >> 3) & 0x1F))
 #define 	MAP_565_to_888(c)			(rgb_t)((((rgb_t)(c) & 0xf800) << 8) | ((c & 0x03E0) << 5) | ((c & 0x1f) << 3))
+#define     RGB_MUL(r, g, b, x)         (((((r*x) >> 8) & 0xFF) << 16) | ((((g*x) >> 8) & 0xFF) << 8) | ((((b*x) >> 8) & 0xFF)))
 
 #define 	MAP_888_R_TO_PWM(r)			((((uint32_t)(r) >> 16) & 0xff) >> (8-bitPlanes))
 #define 	MAP_888_G_TO_PWM(g)			((((uint32_t)(g) >> 8 ) & 0xff) >> (8-bitPlanes))
@@ -78,6 +79,15 @@ extern uint16_t    bitPlanes;
 #define mapToRange(V,VMIN0,VMAX0,VMIN1,VMAX1) ((VMIN1) + (putInRange(V,VMIN0,VMAX0) - (VMIN0)) * ((VMAX1) - (VMIN1)) / ((VMAX0) - (VMIN0)))
 
 
+inline rgb_t rgb_mul(rgb_t color, uint8_t m)
+{
+    uint32_t r = ((color & 0xffu) * m) >> 8;
+    uint32_t g = ((color & 0xff00u) * m) >> 8;
+    uint32_t b = ((color & 0xff0000u) * m) >> 8;
+
+    return r | (g & 0xff00u) | (b & 0xff0000u);
+}
+
 
 typedef struct alpha_s {
     uint8_t		active;				// alpha channel is active
@@ -109,6 +119,11 @@ void LEDmx_SetClip(int16_t l, int16_t r, int16_t t, int16_t b);
 uint8_t LEDmx_IsClipped(int16_t x, int16_t y);
 
 void LEDmx_DrawLine(int16_t x1, int16_t y1, int16_t x2, int16_t y2, rgb_t color, bool overlay);
+
+struct font;
+
+int16_t LEDmx_Char(int code, struct font* fnt, int16_t left, int16_t top, rgb_t color, bool overlay);
+int16_t LEDmx_String(const char* text, struct font* fnt, int16_t left, int16_t top, rgb_t color, bool overlay);
 
 void LEDmx_ClearOverlay (void);
 void LEDmx_SetOverlayPixel(int x, int y, int color);

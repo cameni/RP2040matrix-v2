@@ -57,6 +57,7 @@ The driver currently supports LED panels of sizes 64x64 and 128x128. 128x128 pan
 | PCB_LAYOUT_V1      | 1       | Build  for a PCB v1 board   |
 | PCB_LAYOUT_V2      | 1       | Build  for a PCB v2 board   |
 | HUB75_SIZE   | 4040        | Build for 64 x 64 panel      |
+| HUB75_SIZE   | 8040        | Build for 128 x 64 panel      |
 | HUB75_SIZE   | 8080        | Build for 128 x 128 panel      |
 | HUB75_BCM | <undef>  | Build a PWM version of driver |
 | HUB75_BCM | 1  | Build a BCM version of driver (recommended) |

@@ -32,6 +32,7 @@
 #include "hardware/pio.h"
 #include "hub75.h"
 #include "LEDmx.h"
+#include "bmfont.h"
 
 uint32_t display_buffers[DISPLAY_FRAMEBUFFER_SIZE];
 uint32_t* display_front_buf = &display_buffers[0];
@@ -53,8 +54,7 @@ static void LEDmx_task(void* pvParameters)
         LEDmx_getFlushSemaphore();
         hub75_update(ledmxActiveImage, overlayBuffer);
         LEDmx_putFlushSemaphore();
-        vTaskDelay(3);
-
+        vTaskDelay(6);
     }
 }
 
@@ -248,6 +248,58 @@ void LEDmx_Rect(int16_t left, int16_t top, int16_t right, int16_t bottom, rgb_t 
     return;
 }
 
+
+int16_t LEDmx_Char(int code, struct font* fnt, int16_t left, int16_t top, rgb_t color, bool overlay)
+{
+    struct chardata* chad = 0, *pch = fnt->chars;
+    int nchars = fnt->chars_count;
+    for (int i = 0; i < nchars; ++i) {
+        if (pch[i].id == code) {
+            chad = &pch[i];
+            break;
+        }
+    }
+    if (!chad)
+        return left;
+
+    left += chad->xoffset;
+    top += chad->yoffset; 
+    int right = left + chad->width;
+    int bottom = top + chad->height;
+    const uint8_t* data = fnt->data + chad->offset;
+
+    for (int y = top; y < bottom; ++y)
+    {
+        for (int x = left; x < right; ++x, ++data)
+        {
+            if (*data == 0)
+                continue;
+
+            if (overlay) {
+                LEDmx_SetOverlayPixel(x, y, color);
+            }
+            else {
+                rgb_t pix = *data == 0xff
+                    ? color
+                    : rgb_mul(color, *data);
+
+                LEDmx_DrawPixel(x, y, pix);
+            }
+        }
+    }
+
+    return left - chad->xoffset + chad->xadvance;
+}
+
+int16_t LEDmx_String(const char* text, struct font* fnt, int16_t left, int16_t top, rgb_t color, bool overlay)
+{
+    if (!fnt || !text)
+        return left;
+    while (*text) {
+        left = LEDmx_Char(*text++, fnt, left, top, color, overlay);
+    }
+    return left;
+}
 
 
 void LEDmx_ClearScreen(rgb_t color)

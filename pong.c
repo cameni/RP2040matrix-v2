@@ -287,17 +287,15 @@ static void move_paddle(int padID, int countDown)
 		player[padID].y = (playGround.b - player[padID].h);
 }
 
-
-
 void initPongGame(void)
 {
 	playGround.l = 10;
-	playGround.r = 50;
-	playGround.t = 10;
-	playGround.b = 50;
+	playGround.r = 118;
+	playGround.t = 16;
+	playGround.b = 56;
 
 	LEDmx_ClearOverlay();
-	LEDmx_SetOverlayColor(1, YELLOW);
+	LEDmx_SetOverlayColor(1, RGB(0xff, 0x7f, 0x00));
 	LEDmx_SetOverlayColor(2, RED);
 	LEDmx_SetOverlayColor(3, LTGREEN);
 
@@ -330,7 +328,6 @@ void initPongGame(void)
 	player[1].y = playGround.b / 2;
 	player[1].w = 2;
 	player[1].h = PLAYER_LEN;
-
 }
 
 

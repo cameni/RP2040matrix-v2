@@ -21,7 +21,6 @@
 #include <string.h>
 #include "stdint.h"
 #include "stdlib.h"
-#include "pico/stdlib.h"
 #include "FreeRTOS.h"
 #include "task.h"
 #include "pico/stdlib.h"
@@ -30,13 +29,8 @@
 #include "ps_debug.h"
 #include "hub75.h"
 
-#if HUB75_SIZE == 4040
-uint32_t frameBuffer[DISPLAY_MAXPLANES * (DISPLAY_WIDTH / 4) * DISPLAY_SCAN]; // each entry contains RGB data for 2 or 4 consective pixels on one HUB75 channel
-#elif HUB75_SIZE == 8080
-uint32_t frameBuffer[DISPLAY_MAXPLANES * (DISPLAY_WIDTH / 2) * DISPLAY_SCAN]; // each entry contains RGB data for 2 pixels on two HUB75 channels
-#else
-    #error "V2 board supports 64x64 or 128x128 layouts"
-#endif
+uint32_t frameBuffer[DISPLAY_MAXPLANES * DISPLAY_WIDTH_SCAN * DISPLAY_SCAN]; // each entry contains RGB data for 2 or 4 consective pixels on one HUB75 channel
+
 rgb_t* addrBuffer[(1<<DISPLAY_MAXPLANES)];
 uint16_t  bcmCounter = 1;     // index in addrBuffer array
 
@@ -109,7 +103,7 @@ static void hub75_init()
 #endif
 #ifdef PCB_LAYOUT_V2
 #if HUB75_SIZE == 4040
-    display_offset_data = pio_add_program(display_pio, &ps_64_data_program);
+    display_offset_data = pio_add_program(display_pio, &ps_64_data2_program);
     ps_64_data_program_init(
         display_pio,
         display_sm_data,
@@ -128,9 +122,29 @@ static void hub75_init()
         PIO_CTRL_SET_BASE, PIO_CTRL_SET_CNT,
         PIO_CTRL_SIDE_BASE, PIO_CTRL_SIDE_CNT
     );
+#elif HUB75_SIZE == 8040
+    display_offset_data = pio_add_program(display_pio, &ps_128_data2_program);
+    ps_128_data2_program_init(
+        display_pio,
+        display_sm_data,
+        display_offset_data,
+        PIO_DATA_OUT_BASE, PIO_DATA_OUT_CNT,
+        PIO_DATA_SET_BASE, PIO_DATA_SET_CNT,
+        PIO_DATA_SIDE_BASE, PIO_DATA_SIDE_CNT
+    );
+
+    display_offset_ctrl = pio_add_program(display_pio, &ps_64_ctrl_program);
+    ps_64_ctrl_program_init(
+        display_pio,
+        display_sm_ctrl,
+        display_offset_ctrl,
+        PIO_CTRL_OUT_BASE, PIO_CTRL_OUT_CNT,
+        PIO_CTRL_SET_BASE, PIO_CTRL_SET_CNT,
+        PIO_CTRL_SIDE_BASE, PIO_CTRL_SIDE_CNT
+    );
 #else
-    display_offset_data = pio_add_program(display_pio, &ps_128_data_program);
-    ps_128_data_program_init(
+    display_offset_data = pio_add_program(display_pio, &ps_128_data2_program);
+    ps_128_data2_program_init(
         display_pio,
         display_sm_data,
         display_offset_data,
@@ -167,11 +181,7 @@ static void hub75_init()
         &c,
         &pio0_hw->txf[display_sm_data],
         NULL,  // Will be set later for each transfer
-#if HUB75_SIZE == 4040
-        DISPLAY_SCAN * ((DISPLAY_WIDTH / 4)),     // complete frame buffer for 1 bit plane
-#elif HUB75_SIZE == 8080
-        DISPLAY_SCAN* ((DISPLAY_WIDTH / 2)),     // complete frame buffer for 1 bit plane
-#endif
+        DISPLAY_SCAN * DISPLAY_WIDTH_SCAN,      // complete frame buffer for 1 bit plane
         false
     );
     dma_channel_set_irq0_enabled(display_dma_chan, true);
@@ -257,13 +267,7 @@ void hub75_config(int bpp)
     irq_remove_handler(DMA_IRQ_0, dma_hub75_handler);
 
 
-#if HUB75_SIZE == 4040
-    memset(frameBuffer, 0, bitPlanes * (DISPLAY_WIDTH / 4) * DISPLAY_SCAN * sizeof(uint32_t));
-#elif HUB75_SIZE == 8080
-    memset(frameBuffer, 0, bitPlanes * (DISPLAY_WIDTH / 2) * DISPLAY_SCAN * sizeof(uint32_t));
-#else
-    #error "V2 board supports 64x64 or 128x128 layouts"
-#endif
+    memset(frameBuffer, 0, bitPlanes * (DISPLAY_WIDTH_SCAN * DISPLAY_SCAN * sizeof(uint32_t)));
     memset(ctrlBuffer, 0, bitPlanes * DISPLAY_SCAN * sizeof(uint32_t));
     memset(addrBuffer, 0, (1<<bitPlanes) * sizeof(uint32_t*));
     
@@ -274,11 +278,7 @@ void hub75_config(int bpp)
             if (i & (1 << bPos) && (addrBuffer[i] == 0))
             {
                 LOG_DEBUG("addrBuffer[%3d] = plane %d\n", i, (bitPlanes - bPos));
-#if HUB75_SIZE == 4040
-                addrBuffer[i] = &frameBuffer[(bitPlanes - 1 - bPos) * (DISPLAY_WIDTH / 4) * DISPLAY_SCAN];
-#elif HUB75_SIZE == 8080
-                addrBuffer[i] = &frameBuffer[(bitPlanes - 1 - bPos) * (DISPLAY_WIDTH / 2) * DISPLAY_SCAN];
-#endif
+                addrBuffer[i] = &frameBuffer[(bitPlanes - 1 - bPos) * (DISPLAY_WIDTH_SCAN * DISPLAY_SCAN)];
             }
         }
     }
@@ -307,7 +307,7 @@ void hub75_set_overlaycolor(int index, rgb_t color)
 
 
 
-#if HUB75_SIZE == 4040
+#if HUB75_SIZE == 4040 || HUB75_SIZE == 8040
 int hub75_update(rgb_t *image, uint8_t *overlay)
 {
     int x, y, b, plane;
@@ -319,7 +319,7 @@ int hub75_update(rgb_t *image, uint8_t *overlay)
     for (b = (8 - bitPlanes); b < 8; b++)     // only MSB bits of RGB color
     {
         ip = image;
-        fp = &frameBuffer[(b - (8 - bitPlanes)) * DISPLAY_SCAN * (DISPLAY_WIDTH / 4)];
+        fp = &frameBuffer[(b - (8 - bitPlanes)) * (DISPLAY_SCAN * DISPLAY_WIDTH_SCAN)];
         cp = &ctrlBuffer[(b - (8 - bitPlanes)) * DISPLAY_SCAN];
 
         for (y = 0; y < DISPLAY_SCAN; y++)
@@ -330,7 +330,7 @@ int hub75_update(rgb_t *image, uint8_t *overlay)
             uint8_t* op_lu = overlay + ((y + DISPLAY_SCAN) * DISPLAY_WIDTH);
 
             brtCnt = 0;
-            for (x = 0; x < DISPLAY_WIDTH / 4; x++)     // 4 pixels per framebuffer word
+            for (x = 0; x < DISPLAY_WIDTH_SCAN; x++)     // 4 pixels per framebuffer word
             {
                 rgb_t ipu = *ip_uu++;
                 rgb_t ipl = *ip_lu++;
