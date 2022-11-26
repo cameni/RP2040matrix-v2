@@ -42,6 +42,10 @@
 #define   MAX_X               (LEDS_X-1)                   // Display Max Koords
 #define   MAX_Y               (LEDS_Y-1)
 
+extern struct font* base_font;
+extern float temperature;
+extern float humidity;
+
 /**********************************************************************************************/
 
 typedef struct playGround_s
@@ -81,7 +85,6 @@ int width, height; //used if fullscreen
 // Check if balls collides with player >pid>
 static int check_collision(ball_t ball, int pid)
 {
-
 	int b_l, p_l;
 	int b_r, p_r;
 	int b_t, p_t;
@@ -339,6 +342,18 @@ int playPongGame(int countDown)
 	int i, x, y;
 
 	LEDmx_getFlushSemaphore();
+
+    {
+        char temp[8];
+        sprintf(temp, "% 5.1f", temperature);
+
+        int x = 10;
+		LEDmx_Rect(1, 1, 126, 62, 0, false);
+        x = LEDmx_String("17:06", base_font, x, 0, LTBLUE, false);
+        x += 10;
+        x = LEDmx_String(temp, base_font, x, 0, LTGREEN, false);
+    }
+
 
 	LEDmx_Rect(playGround.l, playGround.t, playGround.r, playGround.b, 0, true);
 	LEDmx_DrawLine(playGround.l + (playGround.r - playGround.l) / 2, playGround.t - 1,

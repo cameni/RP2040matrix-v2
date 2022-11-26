@@ -33,8 +33,6 @@
 
 
 char logTimeBuf[32];
-extern struct font* base_font;
-
 
 void blinkTask(void* para)
 {
@@ -98,6 +96,7 @@ void pongTask(void* para)
     }
 }
 
+void sensorTask(void* para);
 
 
 void app_main(void* para)
@@ -117,7 +116,7 @@ void app_main(void* para)
 #if 0
 #include "mountains_128x64_rgb565.h"
     const uint16_t* img = (const uint16_t*)mountains_128x64;
-    for (int y = 0; y < DISPLAY_HEIGHT; y++) 
+    for (int y = 0; y < DISPLAY_HEIGHT; y++)
     {
         for (int x = 0; x < 128; x++)
         {
@@ -148,14 +147,7 @@ void app_main(void* para)
         LEDmx_SetPixel(0, y, 0x003300);        // green
         LEDmx_SetPixel(DISPLAY_WIDTH - 1, y, 0x000033);       // blue
     }
-	LEDmx_SetPixel(1, 32, 0x003333);
-
-    {
-        int x = 10;
-        x = LEDmx_String("17:06", base_font, x, 0, LTBLUE, false);
-        x += 10;
-        x = LEDmx_String("-1.8 C", base_font, x, 0, LTGREEN, false);
-    }
+    LEDmx_SetPixel(1, 32, 0x003333);
 
     TaskHandle_t xHandle = NULL;
     // Create the task, storing the handle.
@@ -185,12 +177,21 @@ void app_main(void* para)
         tskIDLE_PRIORITY,// Priority at which the task is created.
         &xHandle);*/
 
+    xHandle = NULL;
+    xTaskCreate(
+        sensorTask,       // Function that implements the task.
+        "Sensors",   // Text name for the task.
+        128,             // Stack size in words, not bytes.
+        (void*)1,    // Parameter passed into the task.
+        tskIDLE_PRIORITY,// Priority at which the task is created.
+        &xHandle);
+
     vTaskDelete(NULL);
 }
 
 
 
-int main() 
+int main()
 {
     stdio_init_all();
     gpio_init(15);
@@ -206,7 +207,7 @@ int main()
         NULL);
 
     vTaskStartScheduler();
- 
+
     while (1) {};
     return 0;
 }

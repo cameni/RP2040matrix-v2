@@ -23,7 +23,9 @@
         "queue.h": "c",
         "semphr.h": "c",
         "pico.h": "c",
-        "string.h": "c"
+        "string.h": "c",
+        "dejavu20.h": "c",
+        "pio.h": "c"
     },
     "python.linting.enabled": true,
     "python.analysis.typeshedPaths": [
