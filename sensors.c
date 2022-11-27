@@ -95,14 +95,17 @@ void sensorTask(void* para)
     uint8_t data[6];
 
     // Initialize chosen serial port
-    stdio_init_all();
+    //stdio_init_all();
 
     //Initialize I2C port at 400 kHz
-    i2c_init(i2c, 400 * 1000);
+    i2c_init(i2c, 100 * 1000);
 
     // Initialize I2C pins
     gpio_set_function(sda_pin, GPIO_FUNC_I2C);
     gpio_set_function(scl_pin, GPIO_FUNC_I2C);
+
+    uint8_t channel_mask = 0x01;
+    i2c_write_blocking(i2c, 0x70, &channel_mask, 1, false);
 
     do {
         sleep_ms(2000);
