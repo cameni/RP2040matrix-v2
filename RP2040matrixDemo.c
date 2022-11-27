@@ -110,7 +110,7 @@ void app_main(void* para)
 
     memset(display_buffers, 0, sizeof(display_buffers));
 
-    LEDmx_SetMasterBrightness(20);
+    LEDmx_SetMasterBrightness(10);
     LEDmx_ClearScreen(0x020202);
     vTaskDelay(100);
 #if 0

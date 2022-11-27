@@ -54,7 +54,7 @@ static void LEDmx_task(void* pvParameters)
         LEDmx_getFlushSemaphore();
         hub75_update(ledmxActiveImage, overlayBuffer);
         LEDmx_putFlushSemaphore();
-        vTaskDelay(6);
+        vTaskDelay(3);
     }
 }
 
@@ -263,7 +263,7 @@ int16_t LEDmx_Char(int code, struct font* fnt, int16_t left, int16_t top, rgb_t 
         return left;
 
     left += chad->xoffset;
-    top += chad->yoffset; 
+    top += chad->yoffset;
     int right = left + chad->width;
     int bottom = top + chad->height;
     const uint8_t* data = fnt->data + chad->offset;

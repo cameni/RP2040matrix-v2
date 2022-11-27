@@ -74,7 +74,7 @@ static void dma_hub75_handler()
 }
 
 
-static void hub75_init() 
+static void hub75_init()
 {
     // Initialize PIO
     display_sm_data = pio_claim_unused_sm(display_pio, true);
@@ -90,7 +90,7 @@ static void hub75_init()
         PIO_DATA_SET_BASE, PIO_DATA_SET_CNT,
         PIO_DATA_SIDE_BASE, PIO_DATA_SIDE_CNT
     );
- 
+
     display_offset_ctrl = pio_add_program(display_pio, &ps_64_ctrl_program);
     ps_64_ctrl_program_init(
         display_pio,
@@ -133,8 +133,8 @@ static void hub75_init()
         PIO_DATA_SIDE_BASE, PIO_DATA_SIDE_CNT
     );
 
-    display_offset_ctrl = pio_add_program(display_pio, &ps_64_ctrl_program);
-    ps_64_ctrl_program_init(
+    display_offset_ctrl = pio_add_program(display_pio, &ps_128_ctrl_program);
+    ps_128_ctrl_program_init(
         display_pio,
         display_sm_ctrl,
         display_offset_ctrl,
@@ -270,7 +270,7 @@ void hub75_config(int bpp)
     memset(frameBuffer, 0, bitPlanes * (DISPLAY_WIDTH_SCAN * DISPLAY_SCAN * sizeof(uint32_t)));
     memset(ctrlBuffer, 0, bitPlanes * DISPLAY_SCAN * sizeof(uint32_t));
     memset(addrBuffer, 0, (1<<bitPlanes) * sizeof(uint32_t*));
-    
+
     for (int bPos = 0; bPos < bitPlanes; bPos++)
     {
         for (int i = 1; i < (1<<bitPlanes); i++)
@@ -341,7 +341,7 @@ int hub75_update(rgb_t *image, uint8_t *overlay)
                 if (*op_lu != 0)
                     ipl = overlayColors[*op_lu];
                 op_lu++;
-                
+
                 rgb_t img = (((ipu & (1 << b)) >> b) << 2 |
                     (((ipu >> 8) & (1 << b)) >> b) << 1 |
                     ((ipu >> 16) & (1 << b)) >> b) |
@@ -401,7 +401,7 @@ int hub75_update(rgb_t *image, uint8_t *overlay)
                         (((ipl >> 16) & (1 << b))) >> b) << 3)) << 24;
                 if (++brtCnt > masterBrightness)
                     img |= (1 << 31);
-          
+
                 *fp++ = img;
             }
 

@@ -343,16 +343,19 @@ int playPongGame(int countDown)
 
 	LEDmx_getFlushSemaphore();
 
-    {
-        char temp[8];
-        sprintf(temp, "% 5.1f", temperature);
+	{
+		char temp[8], humi[8];
+		sprintf(temp, "% 5.1f", temperature);
+		sprintf(humi, "%2.0f%%", humidity);
 
-        int x = 10;
+		int x = 10;
 		LEDmx_Rect(1, 1, 126, 62, 0, false);
-        x = LEDmx_String("17:06", base_font, x, 0, LTBLUE, false);
-        x += 10;
-        x = LEDmx_String(temp, base_font, x, 0, LTGREEN, false);
-    }
+		x = LEDmx_String("17:06", base_font, x, 0, LTBLUE, false);
+		x += 5;
+		x = LEDmx_String(temp, base_font, x, 0, LTGREEN, false);
+		x += 5;
+		x = LEDmx_String(humi, base_font, x, 0, LTRED, false);
+	}
 
 
 	LEDmx_Rect(playGround.l, playGround.t, playGround.r, playGround.b, 0, true);
