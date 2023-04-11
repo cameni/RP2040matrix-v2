@@ -1,14 +1,14 @@
 /*****************************************************
  *
- *	LED matrix driver for Raspberry RP2040 
+ *	LED matrix driver for Raspberry RP2040
  *	(c) Peter Schulten, Mülheim, Germany
  *	peter_(at)_pitschu.de
  *
- *  Unmodified reproduction and distribution of this entire 
+ *  Unmodified reproduction and distribution of this entire
  *  source code in any form is permitted provided the above
  *  notice is preserved.
  *  I make this source code available free of charge and therefore
- *  offer neither support nor guarantee for its functionality. 
+ *  offer neither support nor guarantee for its functionality.
  *  Furthermore, I assume no liability for the consequences of
  *  its use.
  *  The source code may only be used and modified for private,
@@ -39,13 +39,13 @@ loop0:
 loox:
     out pins, 6         side 0  ; ----------- apply data ----------------------
     out y, 2            side 0
-    jmp !y, noOE [2]    side 0  ; enable OE when brightness limit reached
-    set pins 0          side 0
+    jmp !y, noOE        side 1  ; enable OE when brightness limit reached
+    set pins 0          side 1
 noOE:
     jmp !osre, loox [1] side 1
     jmp x--, loop0      side 0
-    set pins 3 [5]      side 0  ; last data block in this row: apply LATCH; disable OE
-    irq clear 1 [1]     side 0  ; LATCH will be released by ctrl state machine
+    set pins 3          side 0  ; last data block in this row: apply LATCH; disable OE
+    irq clear 1         side 0  ; LATCH will be released by ctrl state machine
 .wrap
 
 % c-sdk {
@@ -88,7 +88,7 @@ static inline void ps_128_data2_program_init(PIO pio, uint sm, uint offset,
 
     sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_TX);
 
-    sm_config_set_clkdiv(&c, 2);
+    sm_config_set_clkdiv(&c, 1.0f);
 
     sm_config_set_out_shift(&c, true, false, 32);
     sm_config_set_in_shift(&c, false, false, 32);
@@ -110,11 +110,11 @@ public entry_ctrl:
 .wrap_target
     irq clear 0         ; starts data state machine
     ;------------ state machine is running
-    irq wait 1          ; wait until data state machine is ready      
+    irq wait 1 [5]      ; wait until data state machine is ready
     set pins, 2         ; disable LATCH, disable OE
     pull block          ; get line address
     out pins, 5         ; set addr lines
-.wrap 
+.wrap
 
 
 % c-sdk {
@@ -159,7 +159,7 @@ static inline void ps_128_ctrl_program_init(PIO pio, uint sm, uint offset,
 
     sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_TX);
 
-    sm_config_set_clkdiv(&c, 2);
+    sm_config_set_clkdiv(&c, 1.0f);
 
     sm_config_set_out_shift(&c, true, false, 32);
     sm_config_set_in_shift(&c, false, false, 32);

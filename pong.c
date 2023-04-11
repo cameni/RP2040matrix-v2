@@ -42,6 +42,12 @@
 #define   MAX_X               (LEDS_X-1)                   // Display Max Koords
 #define   MAX_Y               (LEDS_Y-1)
 
+extern struct font* base_font;
+extern struct font* small_font;
+extern struct font* big_font;
+extern float temperature[4];
+extern float humidity[4];
+
 /**********************************************************************************************/
 
 typedef struct playGround_s
@@ -81,7 +87,6 @@ int width, height; //used if fullscreen
 // Check if balls collides with player >pid>
 static int check_collision(ball_t ball, int pid)
 {
-
 	int b_l, p_l;
 	int b_r, p_r;
 	int b_t, p_t;
@@ -289,10 +294,10 @@ static void move_paddle(int padID, int countDown)
 
 void initPongGame(void)
 {
-	playGround.l = 10;
-	playGround.r = 118;
-	playGround.t = 16;
-	playGround.b = 56;
+	playGround.l = 67;
+	playGround.r = 124;
+	playGround.t = 20;
+	playGround.b = 60;
 
 	LEDmx_ClearOverlay();
 	LEDmx_SetOverlayColor(1, RGB(0xff, 0x7f, 0x00));
@@ -330,6 +335,7 @@ void initPongGame(void)
 	player[1].h = PLAYER_LEN;
 }
 
+int ledmx_count = 0;
 
 /*
  * PlayGame() runs in the task context of LED matrix driver
@@ -337,10 +343,58 @@ void initPongGame(void)
 int playPongGame(int countDown)
 {
 	int i, x, y;
+	static int count = 0;
+	static TickType_t start = 0;
+	static int freq_app = 0, freq_disp = 0;
+
+	TickType_t time = xTaskGetTickCount();
+	if (start == 0 || (time - start) * portTICK_PERIOD_MS > 1000) {
+		freq_app = count * 1000 / ((time - start) * portTICK_PERIOD_MS);
+		freq_disp = ledmx_count * 1000 / ((time - start) * portTICK_PERIOD_MS);
+		start = time;
+		count = 0;
+		ledmx_count = 0;
+	}
+	count++;
 
 	LEDmx_getFlushSemaphore();
+	//LEDmx_ClearScreen(0x020202);
 
-	LEDmx_Rect(playGround.l, playGround.t, playGround.r, playGround.b, 0, true);
+	{
+		LEDmx_Rect(16, 1, 126, 62, 0, false);
+
+		static rgb_t tcolors[4] = {RGB(0x80, 0xFF, 0x80), WHITE, LTORANGE, RGB(0x60, 0xB0, 0xFF)};
+		static rgb_t hcolors[4] = {RGB(0x40, 0xff, 0x40), LTGRAY, ORANGE, RGB(0xB0, 0xE0, 0xFF)};
+
+		char temp[8], humi[8];
+		//temperature[3] = -1;
+		int y = -2;
+		for (int th = 0; th < 4; ++th) {
+			sprintf(temp, "% 5.1f", th == 3 ? -temperature[th] : temperature[th]);
+			sprintf(humi, "%2.0f%%", humidity[th]);
+
+			LEDmx_StringBck(temp, base_font, 12, y, tcolors[th], BLACK);
+
+			LEDmx_StringBck(humi, small_font, 49, y + 2, hcolors[th], BLACK);
+			//x += 5;
+			//x = LEDmx_String("17:06", base_font, x, y, LTBLUE, false);
+
+			y += 16;
+		}
+
+		y = 0;
+		int x = LEDmx_StringBck("22:48", big_font, 68, y, WHITE, BLACK);
+		LEDmx_StringBck("08", small_font, x + 1, y, LTGRAY, BLACK);
+
+		char fps[10];
+		sprintf(fps, "%3d", freq_app);
+		LEDmx_StringBck(fps, small_font, 68, 64 - 12, ORANGE, BLACK);
+		sprintf(fps, "%3d", freq_disp);
+		LEDmx_StringBck(fps, small_font, 97, 64 - 12, GREEN, BLACK);
+	}
+
+
+	/*LEDmx_Rect(playGround.l, playGround.t, playGround.r, playGround.b, 0, true);
 	LEDmx_DrawLine(playGround.l + (playGround.r - playGround.l) / 2, playGround.t - 1,
 		playGround.l + (playGround.r - playGround.l) / 2, playGround.b + 1, 1, true);
 	move_ball(countDown);
@@ -364,7 +418,7 @@ int playPongGame(int countDown)
 		{
 			LEDmx_SetOverlayPixel(ball.x + x, ball.y + y, 3);
 		}
-	}
+	}*/
 	LEDmx_putFlushSemaphore();
 
 	return 0;

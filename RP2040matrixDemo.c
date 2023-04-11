@@ -31,10 +31,12 @@
 #include "LEDmx.h"
 #include "bmfont.h"
 
+extern uint8_t image_inside[1024];
+extern uint8_t image_outside[1024];
+extern uint8_t image_winter_garden[1024];
+extern uint8_t image_water[1024];
 
 char logTimeBuf[32];
-extern struct font* base_font;
-
 
 void blinkTask(void* para)
 {
@@ -98,6 +100,7 @@ void pongTask(void* para)
     }
 }
 
+void sensorTask(void* para);
 
 
 void app_main(void* para)
@@ -111,13 +114,13 @@ void app_main(void* para)
 
     memset(display_buffers, 0, sizeof(display_buffers));
 
-    LEDmx_SetMasterBrightness(20);
+    LEDmx_SetMasterBrightness(120);
     LEDmx_ClearScreen(0x020202);
     vTaskDelay(100);
 #if 0
 #include "mountains_128x64_rgb565.h"
     const uint16_t* img = (const uint16_t*)mountains_128x64;
-    for (int y = 0; y < DISPLAY_HEIGHT; y++) 
+    for (int y = 0; y < DISPLAY_HEIGHT; y++)
     {
         for (int x = 0; x < 128; x++)
         {
@@ -148,14 +151,11 @@ void app_main(void* para)
         LEDmx_SetPixel(0, y, 0x003300);        // green
         LEDmx_SetPixel(DISPLAY_WIDTH - 1, y, 0x000033);       // blue
     }
-	LEDmx_SetPixel(1, 32, 0x003333);
 
-    {
-        int x = 10;
-        x = LEDmx_String("17:06", base_font, x, 0, LTBLUE, false);
-        x += 10;
-        x = LEDmx_String("-1.8 C", base_font, x, 0, LTGREEN, false);
-    }
+    LEDmx_Image(-2, 0, (const rgb_t*)image_outside, 16, 16);
+    LEDmx_Image(-2, 16, (const rgb_t*)image_inside, 16, 16);
+    LEDmx_Image(-2, 32, (const rgb_t*)image_winter_garden, 16, 16);
+    LEDmx_Image(-2, 48, (const rgb_t*)image_water, 16, 16);
 
     TaskHandle_t xHandle = NULL;
     // Create the task, storing the handle.
@@ -185,12 +185,21 @@ void app_main(void* para)
         tskIDLE_PRIORITY,// Priority at which the task is created.
         &xHandle);*/
 
+    xHandle = NULL;
+    xTaskCreate(
+        sensorTask,       // Function that implements the task.
+        "Sensors",   // Text name for the task.
+        128,             // Stack size in words, not bytes.
+        (void*)1,    // Parameter passed into the task.
+        tskIDLE_PRIORITY,// Priority at which the task is created.
+        &xHandle);
+
     vTaskDelete(NULL);
 }
 
 
 
-int main() 
+int main()
 {
     stdio_init_all();
     gpio_init(15);
@@ -206,7 +215,7 @@ int main()
         NULL);
 
     vTaskStartScheduler();
- 
+
     while (1) {};
     return 0;
 }

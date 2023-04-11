@@ -52,7 +52,7 @@ extern uint16_t    bitPlanes;
 #define     DKRED                       RGB(0x60, 0x00, 0x00)
 #define     RED                         RGB(0xFF, 0x00, 0x00)
 #define     LTRED                       RGB(0xFF, 0x40, 0x40)
-#define     DKGREEN                     RGB(0x00, 0x70, 0x00)
+#define     DKGREEN                     RGB(0x00, 0x60, 0x00)
 #define     GREEN                       RGB(0x00, 0xEF, 0x00)
 #define     LTGREEN                     RGB(0x50, 0xFF, 0x50)
 #define     DKBLUE                      RGB(0x00, 0x00, 0x60)
@@ -68,6 +68,10 @@ extern uint16_t    bitPlanes;
 #define     CYAN                        RGB(0x00, 0xB0, 0xB0)
 #define     LTCYAN                      RGB(0x60, 0xFF, 0xFF)
 #define     GOLD                        RGB(0x90, 0x90, 0x30)
+#define     ORANGE                      RGB(0xFF, 0x80, 0x00)
+#define     DKORANGE                    RGB(0x80, 0x40, 0x00)
+#define     LTORANGE                    RGB(0xFF, 0xB0, 0x20)
+
 
 // pitschu: some very useful and often used macros
 #define min(a,b) ((a)<(b)?(a):(b))
@@ -123,7 +127,12 @@ void LEDmx_DrawLine(int16_t x1, int16_t y1, int16_t x2, int16_t y2, rgb_t color,
 struct font;
 
 int16_t LEDmx_Char(int code, struct font* fnt, int16_t left, int16_t top, rgb_t color, bool overlay);
+int16_t LEDmx_CharBck(int code, struct font* fnt, int16_t left, int16_t top, rgb_t color, rgb_t background);
+
 int16_t LEDmx_String(const char* text, struct font* fnt, int16_t left, int16_t top, rgb_t color, bool overlay);
+int16_t LEDmx_StringBck(const char* text, struct font* fnt, int16_t left, int16_t top, rgb_t color, rgb_t background);
+
+void LEDmx_Image(int left, int top, const rgb_t* data, int width, int height);
 
 void LEDmx_ClearOverlay (void);
 void LEDmx_SetOverlayPixel(int x, int y, int color);

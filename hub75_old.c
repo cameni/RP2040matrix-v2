@@ -56,7 +56,7 @@ static void dma_handler() {
 
 
 
-void hub75_init() 
+void hub75_init()
 {
     // Initialize PIO
     display_sm_data = pio_claim_unused_sm(display_pio, true);
@@ -88,7 +88,7 @@ void hub75_init()
             NULL,  // Will be set later for each transfer
             8 * ((DISPLAY_WIDTH / 2) * DISPLAY_SCAN),     // complete frame buffer
             false
-            ); 
+            );
     // Tell the DMA to raise IRQ line 0 when the channel finishes a block
     dma_channel_set_irq0_enabled(display_dma_chan, true);
     // Configure the processor to run dma_handler() when DMA IRQ 0 is asserted
@@ -125,10 +125,10 @@ int hub75_update(int state, uint32_t *image)
             for (x = 0; x < DISPLAY_WIDTH / 2; x++)
             {
                 uint32_t img = (((*ip_u & (1 << b))>>b)<<2 |
-                                (((*ip_u >> 8) & (1 << b))>>b)<<1 | 
+                                (((*ip_u >> 8) & (1 << b))>>b)<<1 |
                                 ((*ip_u>>16) & (1 << b))>>b) |
-                               ((((*ip_l & (1 << b))>>b)<<2 | 
-                                 (((*ip_l >> 8) & (1 << b))>>b)<<1 | 
+                               ((((*ip_l & (1 << b))>>b)<<2 |
+                                 (((*ip_l >> 8) & (1 << b))>>b)<<1 |
                                  (((*ip_l >> 16) & (1 << b)))>>b) << 3);
                 ip_u++;
                 ip_l++;
@@ -141,7 +141,7 @@ int hub75_update(int state, uint32_t *image)
                 ip_u++;
                 ip_l++;
 
-                if (x == (DISPLAY_WIDTH / 2) - 2)       // 
+                if (x == (DISPLAY_WIDTH / 2) - 2)       //
                 {
                     uint32_t delay = (((1u << b) - 1u));
                     img |= (delay & 0x1fu) << (11u + 16u) | (delay & 0x3e0u) << (11u - 5u);
@@ -157,7 +157,7 @@ int hub75_update(int state, uint32_t *image)
                }
                 else
                     img |= ((((y-1) & 0x1F) << ROW_SHIFT) | (y-1 & 0x1F) << (ROW_SHIFT + 16));
-                
+
                 *fp++ = img;
             }
         }
@@ -170,7 +170,6 @@ int hub75_update(int state, uint32_t *image)
 void  hub75_set_masterbrightness(int brt)
 {
     masterBrightness = brt;
-    
 }
 
 

@@ -22,12 +22,14 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "pico/stdlib.h"
 #include "math.h"
 #include "pico/stdlib.h"
 #include "pico/binary_info.h"
 #include "hardware/dma.h"
 
+#ifndef HUB75_SIZE
+#define HUB75_SIZE 8040
+#endif
 
 // Integer between 1 and 8
 // Lower numbers cause LSBs to be skipped
@@ -214,9 +216,15 @@ typedef struct rgbValue_s {
     uint8_t		R;
     uint8_t		G;
     uint8_t		B;
+    uint8_t     A;
 } rgbValue_t;
 
 typedef uint32_t	rgb_t;
+
+typedef union rgbV_s {
+    rgbValue_t c;
+    rgb_t value;
+} rgbV_t;
 
 // Amount of pixels per framebuffer
 #define DISPLAY_FRAMEBUFFER_SIZE (DISPLAY_WIDTH * DISPLAY_HEIGHT)

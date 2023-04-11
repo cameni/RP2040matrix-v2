@@ -45,7 +45,7 @@ uint8_t  overlayBuffer[DISPLAY_FRAMEBUFFER_SIZE];
 static QueueHandle_t flushBlock;
 
 static alpha_t 		alphaChannel;
-
+extern int ledmx_count;
 
 static void LEDmx_task(void* pvParameters)
 {
@@ -54,7 +54,9 @@ static void LEDmx_task(void* pvParameters)
         LEDmx_getFlushSemaphore();
         hub75_update(ledmxActiveImage, overlayBuffer);
         LEDmx_putFlushSemaphore();
-        vTaskDelay(6);
+        vTaskDelay(1);
+
+        ledmx_count++;
     }
 }
 
@@ -263,7 +265,7 @@ int16_t LEDmx_Char(int code, struct font* fnt, int16_t left, int16_t top, rgb_t 
         return left;
 
     left += chad->xoffset;
-    top += chad->yoffset; 
+    top += chad->yoffset;
     int right = left + chad->width;
     int bottom = top + chad->height;
     const uint8_t* data = fnt->data + chad->offset;
@@ -291,6 +293,58 @@ int16_t LEDmx_Char(int code, struct font* fnt, int16_t left, int16_t top, rgb_t 
     return left - chad->xoffset + chad->xadvance;
 }
 
+int16_t LEDmx_CharBck(int code, struct font* fnt, int16_t left, int16_t top, rgb_t color, rgb_t background)
+{
+    struct chardata* chad = 0, *pch = fnt->chars;
+    int nchars = fnt->chars_count;
+    for (int i = 0; i < nchars; ++i) {
+        if (pch[i].id == code) {
+            chad = &pch[i];
+            break;
+        }
+    }
+    if (!chad)
+        return left;
+
+    int left1 = left + chad->xoffset;
+    int top1 = top + chad->yoffset;
+    int right = left1 + chad->width;
+    int bottom = top1 + chad->height;
+    const uint8_t* data = fnt->data + chad->offset;
+
+    int xend = chad->xadvance > right ? chad->xadvance : right;
+    for (int y = top; y < top1; ++y)
+    {
+        for (int x = left; x < xend; ++x)
+            LEDmx_DrawPixel(x, y, background);
+    }
+
+    for (int y = top1; y < bottom; ++y)
+    {
+        for (int x = left; x < left1; ++x)
+            LEDmx_DrawPixel(x, y, background);
+
+        for (int x = left1; x < right; ++x, ++data) {
+            if (*data == 0)
+                LEDmx_DrawPixel(x, y, background);
+            else
+                LEDmx_DrawPixel(x, y, *data == 0xff ? color : rgb_mul(color, *data));
+        }
+
+        for (int x = right; x < xend; ++x)
+            LEDmx_DrawPixel(x, y, background);
+    }
+
+    int line = fnt->common.lineHeight;
+    for (int y = bottom; y < line; ++y)
+    {
+        for (int x = left; x < xend; ++x)
+            LEDmx_DrawPixel(x, y, background);
+    }
+
+    return left + chad->xadvance;
+}
+
 int16_t LEDmx_String(const char* text, struct font* fnt, int16_t left, int16_t top, rgb_t color, bool overlay)
 {
     if (!fnt || !text)
@@ -299,6 +353,36 @@ int16_t LEDmx_String(const char* text, struct font* fnt, int16_t left, int16_t t
         left = LEDmx_Char(*text++, fnt, left, top, color, overlay);
     }
     return left;
+}
+
+int16_t LEDmx_StringBck(const char* text, struct font* fnt, int16_t left, int16_t top, rgb_t color, rgb_t background)
+{
+    if (!fnt || !text)
+        return left;
+    while (*text) {
+        left = LEDmx_CharBck(*text++, fnt, left, top, color, background);
+    }
+    return left;
+}
+
+void LEDmx_Image(int left, int top, const rgb_t* data, int width, int height)
+{
+    int right = left + width;
+    int bottom = top + height;
+
+    for (int y = top; y < bottom; ++y)
+    {
+        for (int x = left; x < right; ++x)
+        {
+            rgbValue_t color = *(rgbValue_t*)data++;
+            rgbValue_t res;
+            res.R = (uint8_t)(color.B * color.B * (1.0f/255));
+            res.G = (uint8_t)(color.G * color.G * (1.0f/255));
+            res.B = (uint8_t)(color.R * color.R * (1.0f/255));
+            //color = (color & 0x00ff00) | ((color & 0xff) << 16) | ((color & 0xff0000) >> 16);
+            LEDmx_DrawPixel(x, y, *(rgb_t*)&res);
+        }
+    }
 }
 
 

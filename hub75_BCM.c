@@ -29,7 +29,7 @@
 #include "ps_debug.h"
 #include "hub75.h"
 
-uint32_t frameBuffer[DISPLAY_MAXPLANES * DISPLAY_WIDTH_SCAN * DISPLAY_SCAN]; // each entry contains RGB data for 2 or 4 consective pixels on one HUB75 channel
+uint32_t frameBuffer[DISPLAY_MAXPLANES * DISPLAY_WIDTH_SCAN * DISPLAY_SCAN]; // each entry contains RGB data for 2 or 4 consecutive pixels on one HUB75 channel
 
 rgb_t* addrBuffer[(1<<DISPLAY_MAXPLANES)];
 uint16_t  bcmCounter = 1;     // index in addrBuffer array
@@ -49,6 +49,8 @@ static int display_dma_chan;
 static int ctrl_dma_chan;
 
 static rgb_t overlayColors[16];
+
+static uint8_t srgb_lut[256];
 
 
 static void dma_hub75_handler()
@@ -74,11 +76,16 @@ static void dma_hub75_handler()
 }
 
 
-static void hub75_init() 
+static void hub75_init()
 {
     // Initialize PIO
     display_sm_data = pio_claim_unused_sm(display_pio, true);
     display_sm_ctrl = pio_claim_unused_sm(display_pio, true);
+
+    for (int i=0; i<256; ++i) {
+        float k = (float)i * (1.0f / 255);
+        srgb_lut[i] = (uint8_t)lround(255 * k * k);
+    }
 
 #ifdef PCB_LAYOUT_V1
     display_offset_data = pio_add_program(display_pio, &ps_64_data_program);
@@ -90,7 +97,7 @@ static void hub75_init()
         PIO_DATA_SET_BASE, PIO_DATA_SET_CNT,
         PIO_DATA_SIDE_BASE, PIO_DATA_SIDE_CNT
     );
- 
+
     display_offset_ctrl = pio_add_program(display_pio, &ps_64_ctrl_program);
     ps_64_ctrl_program_init(
         display_pio,
@@ -133,8 +140,8 @@ static void hub75_init()
         PIO_DATA_SIDE_BASE, PIO_DATA_SIDE_CNT
     );
 
-    display_offset_ctrl = pio_add_program(display_pio, &ps_64_ctrl_program);
-    ps_64_ctrl_program_init(
+    display_offset_ctrl = pio_add_program(display_pio, &ps_128_ctrl_program);
+    ps_128_ctrl_program_init(
         display_pio,
         display_sm_ctrl,
         display_offset_ctrl,
@@ -270,7 +277,7 @@ void hub75_config(int bpp)
     memset(frameBuffer, 0, bitPlanes * (DISPLAY_WIDTH_SCAN * DISPLAY_SCAN * sizeof(uint32_t)));
     memset(ctrlBuffer, 0, bitPlanes * DISPLAY_SCAN * sizeof(uint32_t));
     memset(addrBuffer, 0, (1<<bitPlanes) * sizeof(uint32_t*));
-    
+
     for (int bPos = 0; bPos < bitPlanes; bPos++)
     {
         for (int i = 1; i < (1<<bitPlanes); i++)
@@ -306,6 +313,14 @@ void hub75_set_overlaycolor(int index, rgb_t color)
 }
 
 
+rgb_t srgb_remap(rgb_t color) {
+    rgbV_t r;
+    r.value = color;
+    r.c.R = srgb_lut[r.c.R];
+    r.c.G = srgb_lut[r.c.G];
+    r.c.B = srgb_lut[r.c.B];
+    return r.value;
+}
 
 #if HUB75_SIZE == 4040 || HUB75_SIZE == 8040
 int hub75_update(rgb_t *image, uint8_t *overlay)
@@ -332,8 +347,9 @@ int hub75_update(rgb_t *image, uint8_t *overlay)
             brtCnt = 0;
             for (x = 0; x < DISPLAY_WIDTH_SCAN; x++)     // 4 pixels per framebuffer word
             {
-                rgb_t ipu = *ip_uu++;
-                rgb_t ipl = *ip_lu++;
+                rgb_t ipu, ipl;
+                ipu = *ip_uu++;
+                ipl = *ip_lu++;
 
                 if (*op_uu != 0)
                     ipu = overlayColors[*op_uu];
@@ -341,7 +357,7 @@ int hub75_update(rgb_t *image, uint8_t *overlay)
                 if (*op_lu != 0)
                     ipl = overlayColors[*op_lu];
                 op_lu++;
-                
+
                 rgb_t img = (((ipu & (1 << b)) >> b) << 2 |
                     (((ipu >> 8) & (1 << b)) >> b) << 1 |
                     ((ipu >> 16) & (1 << b)) >> b) |
@@ -401,7 +417,7 @@ int hub75_update(rgb_t *image, uint8_t *overlay)
                         (((ipl >> 16) & (1 << b))) >> b) << 3)) << 24;
                 if (++brtCnt > masterBrightness)
                     img |= (1 << 31);
-          
+
                 *fp++ = img;
             }
 
